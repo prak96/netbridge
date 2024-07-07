@@ -1,0 +1,79 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "projectName": {
+            "value": "Netbridge",
+            "metadata": {
+                "description": "Enter the Project Name"
+            }
+        },
+        "count": {
+            "value": 4,
+            "metadata": {
+                "description": "Enter the number of VMs"
+            }
+        },
+        "storageName": {
+            "value": "storage15",
+            "metadata": {
+                "description": "Enter the Azure Storage Name"
+            }
+
+        },
+        "skuTypes": {
+            "value": "Standard_LRS",
+            "metadata": {
+                "description": "Enter the sku of Azure Storage"
+            }
+        },
+        "vnetAddressPrefix": {
+            "value": "192.168.0.0/16",
+            "metadata": {
+                "description": "Enter the address Prefix of Virtual Network"
+            }
+        },
+        "vmUsername": {
+            "value": "pratul",
+            "metadata": {
+                "description": "Enter the username of VM"
+            } 
+        },
+        "vmPassword": {
+            "value": "coforge@1234",
+            "metadata": {
+                "description": "Enter the Password of VM"
+            }
+        },
+        "vmOffer": {
+            "value": "WindowsServer",
+            "metadata": {
+                "description": "Enter the OS of VM from the list"
+            }
+        },
+        "vmPublisher": {
+            "value": "MicrosoftWindowsServer",
+            "metadata": {
+                "description": "Enter the Publisher of VM from the list"
+            }
+        },
+        "vmSize": {
+            "value": "Standard_DS2_v2",
+            "metadata": {
+                "description": "Enter the size of VM"
+            }
+        },
+        "vmSku": {
+            "value": "2022-datacenter-azure-edition",
+            "metadata": {
+                "description": "Enter the sku of VM from the list"
+            }
+        },
+        "emailAlert": {
+            "value": "abc@gmail.com",
+            "metadata": {
+                "description": "Enter the email id for metric alert"
+            }
+        }
+    }
+}
