@@ -3,13 +3,13 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "projectName": {
-            "value": "Netbridge",
+            "value": "netbridge",
             "metadata": {
                 "description": "Enter the Project Name"
             }
         },
         "count": {
-            "value": 4,
+            "value": 2,
             "metadata": {
                 "description": "Enter the number of VMs"
             }
@@ -27,12 +27,7 @@
                 "description": "Enter the sku of Azure Storage"
             }
         },
-        "vnetAddressPrefix": {
-            "value": "192.168.0.0/16",
-            "metadata": {
-                "description": "Enter the address Prefix of Virtual Network"
-            }
-        },
+
         "vmUsername": {
             "value": "pratul",
             "metadata": {
@@ -70,7 +65,7 @@
             }
         },
         "emailAlert": {
-            "value": "abc@gmail.com",
+            "value": "1728233@kiit.ac.in",
             "metadata": {
                 "description": "Enter the email id for metric alert"
             }
