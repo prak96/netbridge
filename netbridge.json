@@ -142,10 +142,11 @@
         "storageUniquename": "[concat(parameters('storageName'),uniqueString(resourceGroup().id))]",
         "location": "[resourceGroup().location]",
         "vnetN": "[format('{0}-vnet', parameters('projectName'))]",
+        "vnetN2": "[format('{0}-network-vnet',parameters('projectName'))]",
         "nsgN": "[format('{0}webNSG', parameters('projectName'))]",
         "nsgN2": "[format('{0}NSG', parameters('projectName'))]",
         "publicipN": "[format('{0}Publicip',parameters('projectName'))]",
-        "publicipN2": "[format('{0}Publicip2',parameters('projectName'))]",
+        "publicipN2": "[format('{0}-ip',variables('bastionName'))]",
         "LoadBalancerN": "[format('{0}LB',parameters('projectName'))]",
         "logAnalyticsWorkspaceName": "[concat('laworkspace', uniqueString(resourceGroup().id))]",
         "nicN":"[format('{0}webNic',parameters('projectName'))]",
@@ -216,9 +217,34 @@
             },
             "dependsOn": [
                 "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgN'))]",
-                "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgN2'))]"
+                "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgN2'))]",
+                "[resourceId('Microsoft.Network/virtualnetworks', variables('vnetN2'))]"
             ]
             
+        },
+
+        {
+            "type": "Microsoft.Network/virtualnetworks",
+            "apiVersion": "2023-04-01",
+            "location": "[variables('location')]",
+            "name": "[variables('vnetN2')]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "192.168.0.0/16"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "AzureBastionSubnet",
+                        "properties": {
+                            "addressPrefix": "192.168.1.0/27"
+                        }
+                     }
+                ]
+                
+            }
+    
         },
         
         {
@@ -240,16 +266,15 @@
         {
             "type": "Microsoft.Network/publicIPAddresses",
             "apiVersion": "2023-04-01",
-            "name":"[variables('publicipN2')]",
+            "name": "[variables('publicipN2')]",
             "location": "[variables('location')]",
-            "properties": {
-                "publicIPAllocationMethod": "Static"
-            },
             "sku": {
                 "name": "Standard",
                 "tier": "Regional"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Static"
             }
-
         },
 
         {
@@ -452,6 +477,35 @@
             ]
         },
         {
+            "type": "Microsoft.Network/bastionHosts",
+            "apiVersion": "2023-04-01",
+            "name": "[variables('bastionName')]",
+            "location": "[variables('location')]",
+            "sku": {
+                "name": "Standard"
+            },
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "bastionHostIpConfig",
+                        "properties": {
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicipN2'))]"
+                            },
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('vnetN2'),'AzureBastionSubnet')]"
+                            }
+                        }
+                     }
+                ]
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicipN2'))]",
+                "[resourceId('Microsoft.Network/virtualnetworks', variables('vnetN2'))]"
+            ]
+        },
+
+        {
             "type": "Microsoft.Network/networkInterfaces",
             "apiVersion": "2023-04-01",
             "name": "[concat(variables('nicN'),copyIndex())]",
@@ -501,7 +555,14 @@
                             "subnet":{
                                 "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('vnetN'),'adminsubnet')]"
                             },
+                            "loadBalancerBackendAddressPools":
+                            [
+                                {
+                                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools',variables('LoadBalancerN'),'LB-Pools')]"
+                                }
+                            ],
                             "privateIPAllocationMethod": "Dynamic"
+
                         }
                     }
                 ]
@@ -528,6 +589,12 @@
                             "subnet":{
                                 "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('vnetN'),'databasesubnet')]"
                             },
+                            "loadBalancerBackendAddressPools":
+                            [
+                                {
+                                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools',variables('LoadBalancerN'),'LB-Pools')]"
+                                }
+                            ],
                             "privateIPAllocationMethod": "Dynamic"
                         }
                     }
@@ -720,34 +787,6 @@
             "dependsOn": [
                 "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('nicN3'),copyIndex()))]"
 
-            ]
-        },
-
-        {
-            "type": "Microsoft.Network/bastionHosts",
-            "apiVersion": "2023-04-01",
-            "name": "[variables('bastionName')]",
-            "location": "[variables('location')]",
-            "sku": {
-                "name": "Standard"
-            },
-            "properties": {
-                "ipConfigurations": [
-                    {
-                        "properties": {
-                            "subnet": {
-                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('vnetN'),'adminsubnet')]"
-                            },
-                            "publicIPAddress": {
-                                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicipN2'))]"
-                            }
-                        }
-                     }
-                ]
-            },
-            "dependsOn": [
-                "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetN'))]",
-                "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicipN2'))]"
             ]
         },
 
