@@ -9,5 +9,4 @@ New-AzResourceGroupDeployment `
 -TemplateParameterFile $templatepara -verbose
 
 
-Remove-AzResourceGroup pkp-rg -Force
 
