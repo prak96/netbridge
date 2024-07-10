@@ -154,7 +154,7 @@
         "nicN3":"[format('{0}dbNic',parameters('projectName'))]",
         "actionGroupName": "[concat('{0}AG-',parameters('projectName'),uniqueString(resourceGroup().id))]",
         "alertRuleName": "[concat('AR1-',uniqueString(resourceGroup().id))]",
-        "bastionName": "[format('{0}-bastion',parameters('projectName'))]"
+        //"bastionName": "[format('{0}-bastion',parameters('projectName'))]"
     },
     "resources": [
         {
@@ -476,34 +476,34 @@
                 "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicipN'))]"
             ]
         },
-        {
-            "type": "Microsoft.Network/bastionHosts",
-            "apiVersion": "2023-04-01",
-            "name": "[variables('bastionName')]",
-            "location": "[variables('location')]",
-            "sku": {
-                "name": "Standard"
-            },
-            "properties": {
-                "ipConfigurations": [
-                    {
-                        "name": "bastionHostIpConfig",
-                        "properties": {
-                            "publicIPAddress": {
-                                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicipN2'))]"
-                            },
-                            "subnet": {
-                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('vnetN2'),'AzureBastionSubnet')]"
-                            }
-                        }
-                     }
-                ]
-            },
-            "dependsOn": [
-                "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicipN2'))]",
-                "[resourceId('Microsoft.Network/virtualnetworks', variables('vnetN2'))]"
-            ]
-        },
+        // {
+        //     "type": "Microsoft.Network/bastionHosts",
+        //     "apiVersion": "2023-04-01",
+        //     "name": "[variables('bastionName')]",
+        //     "location": "[variables('location')]",
+        //     "sku": {
+        //         "name": "Standard"
+        //     },
+        //     "properties": {
+        //         "ipConfigurations": [
+        //             {
+        //                 "name": "bastionHostIpConfig",
+        //                 "properties": {
+        //                     "publicIPAddress": {
+        //                         "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicipN2'))]"
+        //                     },
+        //                     "subnet": {
+        //                         "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('vnetN2'),'AzureBastionSubnet')]"
+        //                     }
+        //                 }
+        //              }
+        //         ]
+        //     },
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicipN2'))]",
+        //         "[resourceId('Microsoft.Network/virtualnetworks', variables('vnetN2'))]"
+        //     ]
+        // },
 
         {
             "type": "Microsoft.Network/networkInterfaces",
