@@ -146,14 +146,14 @@
         "nsgN": "[format('{0}webNSG', parameters('projectName'))]",
         "nsgN2": "[format('{0}NSG', parameters('projectName'))]",
         "publicipN": "[format('{0}Publicip',parameters('projectName'))]",
-        "publicipN2": "[format('{0}-ip',variables('bastionName'))]",
+        //"publicipN2": "[format('{0}-ip',variables('bastionName'))]",
         "LoadBalancerN": "[format('{0}LB',parameters('projectName'))]",
         "logAnalyticsWorkspaceName": "[concat('laworkspace', uniqueString(resourceGroup().id))]",
         "nicN":"[format('{0}webNic',parameters('projectName'))]",
         "nicN2":"[format('{0}adminNic',parameters('projectName'))]",
         "nicN3":"[format('{0}dbNic',parameters('projectName'))]",
         "actionGroupName": "[concat('{0}AG-',parameters('projectName'),uniqueString(resourceGroup().id))]",
-        "alertRuleName": "[concat('AR1-',uniqueString(resourceGroup().id))]",
+        "alertRuleName": "[concat('AR1-',uniqueString(resourceGroup().id))]"
         //"bastionName": "[format('{0}-bastion',parameters('projectName'))]"
     },
     "resources": [
@@ -263,19 +263,19 @@
 
         },
 
-        {
-            "type": "Microsoft.Network/publicIPAddresses",
-            "apiVersion": "2023-04-01",
-            "name": "[variables('publicipN2')]",
-            "location": "[variables('location')]",
-            "sku": {
-                "name": "Standard",
-                "tier": "Regional"
-            },
-            "properties": {
-                "publicIPAllocationMethod": "Static"
-            }
-        },
+        // {
+        //     "type": "Microsoft.Network/publicIPAddresses",
+        //     "apiVersion": "2023-04-01",
+        //     "name": "[variables('publicipN2')]",
+        //     "location": "[variables('location')]",
+        //     "sku": {
+        //         "name": "Standard",
+        //         "tier": "Regional"
+        //     },
+        //     "properties": {
+        //         "publicIPAllocationMethod": "Static"
+        //     }
+        // },
 
         {
             "type": "Microsoft.Network/networkSecurityGroups",
