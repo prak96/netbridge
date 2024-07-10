@@ -501,8 +501,7 @@
         //         "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicipN2'))]",
         //         "[resourceId('Microsoft.Network/virtualnetworks', variables('vnetN2'))]"
         //     ]
-        // },
-
+        // }
 
         {
             "type": "Microsoft.Network/networkInterfaces",
