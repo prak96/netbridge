@@ -1,0 +1,116 @@
+
+//Local Network Gateway
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "localNetworkGatewayName": {
+            "value": "netbridge-localGateway"
+        },
+        "location": {
+            "value": "eastasia"
+        },
+        "addressPrefixes": {
+            "value": [
+                "10.0.0.0/16"
+            ]
+        },
+        "gatewayIpAddress": {
+            "value": "49.43.231.3"
+        }
+    }
+}
+
+
+
+
+
+//VPN
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "name": {
+            "value": "S2S-netbridge-VPN"
+        },
+        "location": {
+            "value": "eastasia"
+        },
+        "gatewayType": {
+            "value": "Vpn"
+        },
+        "sku": {
+            "value": "VpnGw2"
+        },
+        "vpnGatewayGeneration": {
+            "value": "Generation2"
+        },
+        "vpnType": {
+            "value": "RouteBased"
+        },
+        "subnetId": {
+            "value": "/subscriptions/436f92e2-6b30-4307-a390-a64596abd106/resourceGroups/netbridge-rg/providers/Microsoft.Network/virtualNetworks/netbridge-network-vnet/subnets/GatewaySubnet"
+        },
+        "newPublicIpAddressName": {
+            "value": "S2S-netbridge-VPN-ip"
+        },
+        "connectionType": {
+            "value": "IPsec"
+        },
+        "virtualNetworkGatewayId1": {
+            "value": "/subscriptions/436f92e2-6b30-4307-a390-a64596abd106/resourceGroups/netbridge-rg/providers/Microsoft.Network/virtualNetworkGateways/S2S-netbridge-VPN"
+        },
+        "connectionName": {
+            "value": "S2S-netbridge-connections"
+        },
+        "useLocalAzureIpAddress": {
+            "value": false
+        },
+        "enableBgp": {
+            "value": false
+        },
+        "connectionProtocol": {
+            "value": "IKEv2"
+        },
+        "ipsecPolicies": {
+            "value": []
+        },
+        "dpdTimeoutSeconds": {
+            "value": 45
+        },
+        "connectionMode": {
+            "value": "Default"
+        },
+        "localNetworkGatewayId2": {
+            "value": "/subscriptions/436f92e2-6b30-4307-a390-a64596abd106/resourceGroups/netbridge-rg/providers/Microsoft.Network/localNetworkGateways/netbridge-localGateway"
+        },
+        "ingressNatRules": {
+            "value": []
+        },
+        "egressNatRules": {
+            "value": []
+        }
+    }
+},
+
+
+//ROUTE TABLES
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "name": {
+            "value": "netbridge-S2S-Route"
+        },
+        "location": {
+            "value": "eastasia"
+        },
+        "tagsByResource": {
+            "value": {}
+        },
+        "disableBgpRoutePropagation": {
+            "value": false
+        }
+    }
+}
+

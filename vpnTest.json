@@ -1,0 +1,134 @@
+
+//Local Network Gateway
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "localNetworkGatewayName": {
+            "type": "String"
+        },
+        "location": {
+            "type": "String"
+        },
+        "addressPrefixes": {
+            "type": "Array"
+        },
+        "gatewayIpAddress": {
+            "type": "String"
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/localNetworkGateways",
+            "apiVersion": "2019-02-01",
+            "name": "[parameters('localNetworkGatewayName')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "localNetworkAddressSpace": {
+                    "addressPrefixes": "[parameters('addressPrefixes')]"
+                },
+                "gatewayIpAddress": "[parameters('gatewayIpAddress')]"
+            }
+        },
+
+
+
+//VPN
+
+        {
+            "type": "Microsoft.Network/virtualNetworkGateways",
+            "apiVersion": "2023-02-01",
+            "name": "[parameters('name')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses/', parameters('newPublicIpAddressName'))]"
+            ],
+            "tags": {},
+            "properties": {
+                "gatewayType": "[parameters('gatewayType')]",
+                "ipConfigurations": [
+                    {
+                        "name": "default",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[parameters('subnetId')]"
+                            },
+                            "publicIpAddress": {
+                                "id": "[resourceId('netbridge-rg', 'Microsoft.Network/publicIPAddresses', parameters('newPublicIpAddressName'))]"
+                            }
+                        }
+                    }
+                ],
+                "vpnType": "[parameters('vpnType')]",
+                "vpnGatewayGeneration": "[parameters('vpnGatewayGeneration')]",
+                "sku": {
+                    "name": "[parameters('sku')]",
+                    "tier": "[parameters('sku')]"
+                }
+            }
+        },
+
+
+
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2020-08-01",
+            "name": "[parameters('newPublicIpAddressName')]",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            },
+            "zones": [],
+            "properties": {
+                "publicIPAllocationMethod": "Static"
+            }
+        },
+
+        {
+            "type": "Microsoft.Network/connections",
+            "apiVersion": "2023-09-01",
+            "name": "[parameters('connectionName')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [],
+            "tags": {},
+            "properties": {
+                "connectionType": "[parameters('connectionType')]",
+                "virtualNetworkGateway1": {
+                    "id": "[parameters('virtualNetworkGatewayId1')]"
+                },
+                "useLocalAzureIpAddress": "[parameters('useLocalAzureIpAddress')]",
+                "enableBgp": "[parameters('enableBgp')]",
+                "connectionProtocol": "[parameters('connectionProtocol')]",
+                "SharedKey": "coforge@1234",
+                "ipsecPolicies": "[parameters('ipsecPolicies')]",
+                "dpdTimeoutSeconds": "[parameters('dpdTimeoutSeconds')]",
+                "connectionMode": "[parameters('connectionMode')]",
+                "ingressNatRules": "[parameters('ingressNatRules')]",
+                "egressNatRules": "[parameters('egressNatRules')]",
+                "localNetworkGateway2": {
+                    "id": "[parameters('localNetworkGatewayId2')]"
+                }
+            }
+        },
+
+
+//ROUTE TABLE
+
+        {
+            "type": "Microsoft.Network/routeTables",
+            "apiVersion": "2019-02-01",
+            "name": "[parameters('name')]",
+            "location": "[parameters('location')]",
+            "tags": "[ if(contains(parameters('tagsByResource'), 'Microsoft.Network/routeTables'), parameters('tagsByResource')['Microsoft.Network/routeTables'], json('{}')) ]",
+            "properties": {
+                "disableBgpRoutePropagation": "[parameters('disableBgpRoutePropagation')]"
+            }
+        }
+
+
+    ]
+}
+
+
