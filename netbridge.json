@@ -128,12 +128,44 @@
                 "description": "sku of VM"
             }
         },
+
+        "vpnVNETaddressPrefix": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 25,
+            "metadata": {
+                "description": "address Prefix of VPN vnet"
+            }
+        },
+
         "emailAlert": {
             "type": "string",
             "metadata": {
                 "description": "email id for metric alert"
             }
+        },
+//VPN Parameters
+        "LNGonpremAddressPrefix": {
+            "type": "array",
+            "metadata": {
+                "description": "addressPrefix of on-prem env to attach it in LNG"
+            }
+        },
+
+        "gatewayPublicIpAddress": {
+            "type": "string",
+            "metadata": {
+                "description": "host public ip address"
+            }
+        },
+
+        "sharedKey": {
+            "type": "securestring",
+            "metadata": {
+                "description":"enter the PSK key"
+            }
         }
+    
         
         
         
@@ -143,21 +175,29 @@
         "location": "[resourceGroup().location]",
         "vnetN": "[format('{0}-vnet', parameters('projectName'))]",
         "vnetN2": "[format('{0}-network-vnet',parameters('projectName'))]",
+        "gatewaySubnetName": "gatewaySubnet",
+        "bastionName": "[format('{0}-bastion',parameters('projectName'))]",
+        "bastionSubnetName": "bastionName",
         "nsgN": "[format('{0}webNSG', parameters('projectName'))]",
         "nsgN2": "[format('{0}NSG', parameters('projectName'))]",
         "publicipN": "[format('{0}Publicip',parameters('projectName'))]",
-        //"publicipN2": "[format('{0}-ip',variables('bastionName'))]",
+        "publicipN2": "[format('{0}-ip',variables('bastionName'))]",
+        "publicipN3":"[format('{0}-ip',variables('VPNname'))]",
         "LoadBalancerN": "[format('{0}LB',parameters('projectName'))]",
         "logAnalyticsWorkspaceName": "[concat('laworkspace', uniqueString(resourceGroup().id))]",
+        "LNGname":"[format('{0}-localGateway',parameters('projectName'))]",
+        "VPNname":"[format('S2S-{0}-VPN',parameters('projectName'))]",
+        "connectionName":"[format('S2S-{0}-connections',parameters('projectName'))]",
+        "RouteTableName":"[format('{0}-S2S-Route',parameters('projectName'))]",
         "nicN":"[format('{0}webNic',parameters('projectName'))]",
         "nicN2":"[format('{0}adminNic',parameters('projectName'))]",
         "nicN3":"[format('{0}dbNic',parameters('projectName'))]",
         "actionGroupName": "[concat('{0}AG-',parameters('projectName'),uniqueString(resourceGroup().id))]",
-        "alertRuleName": "[concat('AR1-',uniqueString(resourceGroup().id))]"
-        //"bastionName": "[format('{0}-bastion',parameters('projectName'))]"
+        "alertRuleName": "[concat('AR1-',uniqueString(resourceGroup().id))]",
+        "AVName": "[format('{0}-av', parameters('projectName'))]"
     },
     "resources": [
-        {
+        {   //Storage Account
             "type": "Microsoft.Storage/storageAccounts",
             "name": "[variables('storageUniquename')]",
             "location": "[variables('location')]",
@@ -169,7 +209,7 @@
            
             
         },
-        {
+        {   //VNET with 3 Subnets
             "type": "Microsoft.Network/virtualnetworks",
             "apiVersion": "2023-04-01",
             "name": "[variables('vnetN')]",
@@ -177,7 +217,7 @@
             "properties": {
                 "addressSpace": {
                     "addressPrefixes": [
-                        "10.0.0.0/16"
+                        "172.17.0.0/16"
                     ]
                 },
                 "subnets": [
@@ -185,9 +225,12 @@
                       {
                         "name":"webappsubnet",
                         "properties": {
-                            "addressPrefix": "10.0.1.0/24",
+                            "addressPrefix": "172.17.0.0/24",
                             "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('nsgN'))]"
+                            },
+                            "routeTable": {
+                                "id": "[resourceId('Microsoft.Network/routeTables',variables('RouteTableName'))]"
                             }
                         }
                         
@@ -196,18 +239,24 @@
                      {
                         "name": "databasesubnet",
                         "properties": {
-                            "addressPrefix": "10.0.2.0/24",
+                            "addressPrefix": "172.17.1.0/24",
                             "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('nsgN2'))]"
+                            },
+                            "routeTable": {
+                                "id": "[resourceId('Microsoft.Network/routeTables',variables('RouteTableName'))]"
                             }
                         }
                       },
                       {
                         "name": "adminsubnet",
                         "properties": {
-                            "addressPrefix": "10.0.3.0/24",
+                            "addressPrefix": "172.17.2.0/24",
                             "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('nsgN2'))]"
+                            },
+                            "routeTable": {
+                                "id": "[resourceId('Microsoft.Network/routeTables',variables('RouteTableName'))]"
                             }
                         }
                       }
@@ -218,12 +267,13 @@
             "dependsOn": [
                 "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgN'))]",
                 "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgN2'))]",
-                "[resourceId('Microsoft.Network/virtualnetworks', variables('vnetN2'))]"
+                "[resourceId('Microsoft.Network/virtualnetworks', variables('vnetN2'))]",
+                "[resourceId('Microsoft.Network/routeTables', variables('RouteTableName'))]"
             ]
             
         },
 
-        {
+        {   //VNET with Gateway & Bastion Subnet
             "type": "Microsoft.Network/virtualnetworks",
             "apiVersion": "2023-04-01",
             "location": "[variables('location')]",
@@ -231,22 +281,38 @@
             "properties": {
                 "addressSpace": {
                     "addressPrefixes": [
-                        "192.168.0.0/16"
+                        "[parameters('vpnVNETaddressPrefix')]"
                     ]
-                },
-                "subnets": [
-                    {
-                        "name": "AzureBastionSubnet",
-                        "properties": {
-                            "addressPrefix": "192.168.1.0/27"
-                        }
-                     }
-                ]
+                }
                 
             }
         },
-        
+
         {
+            "type": "Microsoft.Network/virtualnetworks/subnets",
+            "apiVersion": "2023-04-01",
+            "name": "[concat(variables('vnetN2'), '/', variables('gatewaySubnetName'))]",
+            "properties": {
+                "addressPrefix": "[format('{0}.{1}.3.0/27', split(parameters('vpnVNETaddressPrefix'),'.')[0], split(parameters('vpnVNETaddressPrefix'),'.')[1])]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualnetworks', variables('vnetN2'))]"
+            ]
+        },
+
+        {
+             "type": "Microsoft.Network/virtualnetworks/subnets",
+             "apiVersion": "2023-04-01",
+             "name": "[concat(variables('vnetN2'), '/', variables('bastionSubnetName'))]",
+             "properties": {
+                 "addressPrefix": "[format('{0}.{1}.1.0/27', split(parameters('vpnVNETaddressPrefix'),'.')[0], split(parameters('vpnVNETaddressPrefix'),'.')[1])]"
+             },
+             "dependsOn": [
+                 "[resourceId('Microsoft.Network/virtualnetworks', variables('vnetN2'))]"
+            ]
+         },
+        
+        {   //Public IP Address for Azure Load Balancer
             "type": "Microsoft.Network/publicIPAddresses",
             "apiVersion": "2023-04-01",
             "name":"[variables('publicipN')]",
@@ -261,21 +327,36 @@
             
 
         },
-        // {
-        //     "type": "Microsoft.Network/publicIPAddresses",
-        //     "apiVersion": "2023-04-01",
-        //     "name": "[variables('publicipN2')]",
-        //     "location": "[variables('location')]",
-        //     "sku": {
-        //         "name": "Standard",
-        //         "tier": "Regional"
-        //     },
-        //     "properties": {
-        //         "publicIPAllocationMethod": "Static"
-        //     }
-        // },
 
-        {
+         {  //Public IP Address for Azure Bastion
+             "type": "Microsoft.Network/publicIPAddresses",
+             "apiVersion": "2023-04-01",
+             "name": "[variables('publicipN2')]",
+             "location": "[variables('location')]",
+             "sku": {
+                 "name": "Standard",
+                 "tier": "Regional"
+             },
+             "properties": {
+                 "publicIPAllocationMethod": "Static"
+             }
+         },
+
+        {   //Public IP Address for Azure VPN
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2023-04-01",
+            "name":"[variables('publicipN3')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "publicIPAllocationMethod": "Static"
+            },
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            }
+        },
+
+        {   //NSGs
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2023-04-01",
             "name": "[variables('nsgN')]",
@@ -387,7 +468,7 @@
                 ]
             }
         },
-        {
+        {   //Load Balancers
             "type": "Microsoft.Network/loadBalancers",
             "apiVersion": "2023-04-01",
             "name": "[variables('LoadBalancerN')]",
@@ -474,36 +555,37 @@
                 "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicipN'))]"
             ]
         },
-        // {
-        //     "type": "Microsoft.Network/bastionHosts",
-        //     "apiVersion": "2023-04-01",
-        //     "name": "[variables('bastionName')]",
-        //     "location": "[variables('location')]",
-        //     "sku": {
-        //         "name": "Standard"
-        //     },
-        //     "properties": {
-        //         "ipConfigurations": [
-        //             {
-        //                 "name": "bastionHostIpConfig",
-        //                 "properties": {
-        //                     "publicIPAddress": {
-        //                         "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicipN2'))]"
-        //                     },
-        //                     "subnet": {
-        //                         "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('vnetN2'),'AzureBastionSubnet')]"
-        //                     }
-        //                 }
-        //              }
-        //         ]
-        //     },
-        //     "dependsOn": [
-        //         "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicipN2'))]",
-        //         "[resourceId('Microsoft.Network/virtualnetworks', variables('vnetN2'))]"
-        //     ]
-        // }
 
-        {
+        {   //Azure Bastion
+            "type": "Microsoft.Network/bastionHosts",
+            "apiVersion": "2023-04-01",
+            "name": "[variables('bastionName')]",
+            "location": "[variables('location')]",
+            "sku": {
+                "name": "Standard"
+            },
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "bastionHostIpConfig",
+                        "properties": {
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicipN2'))]"
+                            },
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('vnetN2'),'AzureBastionSubnet')]"
+                            }
+                        }
+                     }
+                ]
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicipN2'))]",
+                "[resourceId('Microsoft.Network/virtualnetworks', variables('vnetN2'))]"
+            ]
+        },
+
+        {   //NICs for VMs
             "type": "Microsoft.Network/networkInterfaces",
             "apiVersion": "2023-04-01",
             "name": "[concat(variables('nicN'),copyIndex())]",
@@ -603,7 +685,53 @@
             ]
         },
 
+        {   //Availability Sets
+            "type": "Microsoft.Compute/availabilitySets",
+            "apiVersion": "2023-03-01",
+            "location": "[variables('location')]",
+            "name": "[format('{0}-admin', variables('AVName'))]",
+            "properties": {
+                "platformFaultDomainCount": 2,
+                "platformUpdateDomainCount": 5
+            },
+             "sku": {
+                "name": "Aligned"
+            }
+
+        },
+
         {
+            "type": "Microsoft.Compute/availabilitySets",
+            "apiVersion": "2023-03-01",
+            "location": "[variables('location')]",
+            "name": "[format('{0}-db', variables('AVName'))]",
+            "properties": {
+                "platformFaultDomainCount": 2,
+                "platformUpdateDomainCount": 5
+            },
+             "sku": {
+                "name": "Aligned"
+            }
+
+        },
+
+        {
+            "type": "Microsoft.Compute/availabilitySets",
+            "apiVersion": "2023-03-01",
+            "location": "[variables('location')]",
+            "name": "[format('{0}-web', variables('AVName'))]",
+            "properties": {
+                "platformFaultDomainCount": 2,
+                "platformUpdateDomainCount": 5
+
+            },
+            "sku": {
+                "name": "Aligned"
+            }
+
+        },
+
+        {   //Azure Virtual Machines
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2023-03-01",
             "location":"[variables('location')]",
@@ -614,6 +742,9 @@
             },
             
             "properties": {
+                "availabilitySet": {
+                    "id": "[resourceId('Microsoft.Compute/availabilitySets',format('{0}-web', variables('AVName')))]"
+                },
                 "osProfile": {
                     "computerName": "[concat(format('webvm'),copyIndex())]",
                     "adminUsername": "[parameters('vmUsername')]",
@@ -659,7 +790,8 @@
                 
             },
             "dependsOn": [
-                "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('nicN'),copyIndex()))]"
+                "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('nicN'),copyIndex()))]",
+                "[resourceId('Microsoft.Compute/availabilitySets', format('{0}-web', variables('AVName')))]"
 
             ]
            
@@ -677,6 +809,9 @@
             },
             
             "properties": {
+                "availabilitySet": {
+                    "id": "[resourceId('Microsoft.Compute/availabilitySets',format('{0}-admin', variables('AVName')))]"
+                },
                 "osProfile": {
                     "computerName": "[concat(format('adminvm'),copyIndex())]",
                     "adminUsername": "[parameters('vmUsername')]",
@@ -722,7 +857,8 @@
                 
             },
             "dependsOn": [
-                "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('nicN2'),copyIndex()))]"
+                "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('nicN2'),copyIndex()))]",
+                "[resourceId('Microsoft.Compute/availabilitySets', format('{0}-admin', variables('AVName')))]"
 
             ]
         },
@@ -738,6 +874,9 @@
             },
             
             "properties": {
+                "availabilitySet": {
+                    "id": "[resourceId('Microsoft.Compute/availabilitySets',format('{0}-db', variables('AVName')))]"
+                },
                 "osProfile": {
                     "computerName": "[concat(format('dbvm'),copyIndex())]",
                     "adminUsername": "[parameters('vmUsername')]",
@@ -783,12 +922,131 @@
                 
             },
             "dependsOn": [
-                "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('nicN3'),copyIndex()))]"
+                "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('nicN3'),copyIndex()))]",
+                "[resourceId('Microsoft.Compute/availabilitySets', format('{0}-db', variables('AVName')))]"
 
             ]
         },
 
+        {   //VPN Configurations
+            "type": "Microsoft.Network/localNetworkGateways",
+            "apiVersion": "2023-04-01",
+            "location": "[variables('location')]",
+            "name": "[variables('LNGname')]",
+            "properties": {
+                "localNetworkAddressSpace": {
+                    "addressPrefixes": "[parameters('LNGonpremAddressPrefix')]"
+                },
+                "gatewayIpAddress": "[parameters('gatewayPublicIpAddress')]"
+            
+            }
+        },
+
         {
+            "type": "Microsoft.Network/virtualnetworkgateways",
+            "apiVersion": "2023-04-01",
+            "name": "[variables('VPNname')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "gatewayType": "Vpn",
+                "vpnType": "RouteBased",
+                "vpnGatewayGeneration": "Generation1",
+                "sku": {
+                    "name": "VpnGw2",
+                    "tier": "VpnGw2"
+                },
+                "ipConfigurations": [
+                    {
+                        "name": "default",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicipN3'))]"
+                            },
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('vnetN2'),variables('gatewaySubnetName'))]"
+                            }
+                        }
+                     }
+                ]
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicipN3'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('vnetN2'),variables('gatewaySubnetName'))]"
+            ]
+        },
+
+        {
+            "type": "Microsoft.Network/connections",
+            "apiVersion": "2023-04-01",
+            "name": "[variables('connectionName')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "connectionType": "IPsec",
+                "virtualNetworkGateway1": {
+                            "id": "[resourceId('Microsoft.Network/virtualnetworkgateways',variables('VPNname'))]",
+                            "properties": {
+                                    "gatewayType": "Vpn",
+                        "vpnType": "RouteBased",
+                        "vpnGatewayGeneration": "Generation1",
+                        "sku": {
+                            "name": "VpnGw2",
+                            "tier": "VpnGw2"
+                        },
+                        "ipConfigurations": [
+                            {
+                                "name": "default",
+                                "properties": {
+                                    "privateIPAllocationMethod": "Dynamic",
+                                    "publicIPAddress": {
+                                        "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicipN3'))]"
+                                    },
+                                    "subnet": {
+                                        "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('vnetN2'),variables('gatewaySubnetName'))]"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+
+                },
+                "useLocalAzureIpAddress": false,
+                "enableBgp": false,
+                "connectionProtocol": "IKEv2",
+                "sharedKey": "[parameters('sharedKey')]",
+                "dpdTimeoutSeconds": 45,
+                "connectionMode": "Default",
+                "localNetworkGateway2": {
+                    "id": "[resourceId('Microsoft.Network/localNetworkGateways',variables('LNGname'))]",
+                    "properties": {
+                                "localNetworkAddressSpace": {
+                                "addressPrefixes": "[parameters('LNGonpremAddressPrefix')]"
+                                },
+                                "gatewayIpAddress": "[parameters('gatewayPublicIpAddress')]"
+                            }    
+                        }
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/localNetworkGateways', variables('LNGname'))]",
+                "[resourceId('Microsoft.Network/virtualnetworkgateways', variables('VPNname'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('vnetN2'),variables('gatewaySubnetName'))]"
+            ]
+        },
+
+        {   //Azure Route Table
+            "type": "Microsoft.Network/routeTables",
+            "apiVersion": "2023-04-01",
+            "name": "[variables('RouteTableName')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "disableBgpRoutePropagation": false
+                
+            }
+        },
+
+        
+
+        {   //Azure LAW
             "type": "Microsoft.OperationalInsights/workspaces",
             "apiVersion": "2021-06-01",
             "name": "[variables('logAnalyticsWorkspaceName')]",
@@ -801,7 +1059,7 @@
 
         },
 
-        {
+        {   //Azure Insights Action Groups
             "type": "microsoft.insights/actionGroups",
             "apiVersion": "2023-01-01",
             "name": "[variables('actionGroupName')]",
@@ -819,7 +1077,7 @@
 
         },
 
-        {
+        {   //Azure Insights Metric Alerts
             "type": "Microsoft.Insights/metricAlerts",
             "apiVersion": "2018-03-01",
             "name": "[variables('alertRuleName')]",

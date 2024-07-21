@@ -11,7 +11,7 @@
         "count": {
             "value": 2,
             "metadata": {
-                "description": "Enter the number of VMs"
+                "description": "Enter the number of VMs in each subnet"
             }
         },
         "storageName": {
@@ -35,7 +35,7 @@
             } 
         },
         "vmPassword": {
-            "value": "coforge@1234",
+            "value": "VMpassword@1234",
             "metadata": {
                 "description": "Enter the Password of VM"
             }
@@ -64,10 +64,34 @@
                 "description": "Enter the sku of VM from the list"
             }
         },
+        "vpnVNETaddressPrefix": {
+            "value": "192.168.0.0/16",
+            "metadata": {
+                "description": "Enter the addressPrefix of Gateway Subnet"
+            }
+        },
         "emailAlert": {
-            "value": "1728233@kiit.ac.in",
+            "value": "abc@gmail.com",
             "metadata": {
                 "description": "Enter the email id for metric alert"
+            }
+        },
+        "LNGonpremAddressPrefix": {
+            "value": ["10.0.0.0/16"],
+            "metadata": {
+                "description": "Enter the unique addressPrefixes of on-premises network"
+            }
+        },
+        "gatewayPublicIpAddress": {
+            "value": "X.X.X.X",
+            "metadata": {
+                "description": "Enter the local host's public ip address that will be used in Local Network Gateway"
+            }
+        },
+        "sharedKey": {
+            "value": "Password@1234",
+            "metadata": {
+                "description":"Enter the PSK value used for Connections"
             }
         }
     }
