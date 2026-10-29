@@ -16,7 +16,7 @@ resource "azurerm_resource_group" "my_rg" {
   })
 }
 
-
+# Virtual Network
 resource "azurerm_virtual_network" "my_vnet" {
   location            = azurerm_resource_group.my_rg.location
   name                = "${local.my_tags.project}-${local.my_tags.usedBy}-vnet"
@@ -28,14 +28,27 @@ resource "azurerm_virtual_network" "my_vnet" {
   })
 }
 
+# Subnets
+resource "azurerm_subnet" "subnet" {
+  count = length(var.env_names)
 
-resource "azurerm_subnet" "adminSubnet" {
-  # count = 1
-
-  name                 = "subnet-admin"
+  name                 = "${var.env_names[count.index]}-subnet"
   resource_group_name  = azurerm_resource_group.my_rg.name
   virtual_network_name = azurerm_virtual_network.my_vnet.name
-  address_prefixes     = [cidrsubnet(var.vnet-cidr, 8, 0)]
+  address_prefixes = [cidrsubnet(var.vnet-cidr, 8, count.index)]
+  
 }
 
+# Network Security Group
+resource "azurerm_network_security_group" "nsg" {
+  count = length(var.env_names)
 
+  location            = azurerm_resource_group.my_rg.location
+  name                = "${var.env_names[count.index]}-nsg"
+  resource_group_name = azurerm_resource_group.my_rg.name
+
+  tags = merge(local.my_tags, {
+    "service" = "networkSecurityGroup"
+  })
+
+}
