@@ -35,3 +35,7 @@ Thumbs.db
 
 # ServicePrincipal_IDENTITY
 *.sh
+
+# BACKUP Files
+*.tf_backup
+
