@@ -5,7 +5,7 @@ locals {
     "usedBy"  = "tf"
   }
 
-   my_locations = [
+  my_locations = [
     "eastus",
     "westus",
     "eastasia",
@@ -14,25 +14,30 @@ locals {
 }
 
 variable "rg_location" {
-  type = string
+  type        = string
   description = "Enter the LOCATION of Resource Group"
 
   validation {
-    condition = contains(local.my_locations, lower(trimspace(var.rg_location)))
-                                              ### " east asia " --> Input will NOT BE TAKEN as valid AZURE LOCATION since 'replace()' function is not used to remove [" "] as depicted below 
-    
+    condition = contains(local.my_locations, lower(replace(trimspace(var.rg_location), " ", "")))
+    ### " east asia " --> Input will NOT BE TAKEN as valid AZURE LOCATION since 'replace()' function is not used to remove [" "] as depicted below 
+
     error_message = "Enter only these LOCATIONS from list"
   }
 }
 
 variable "vpn_location" {
-  type = string
+  type        = string
   description = "Enter the LOCATION of Resource Group"
 
   validation {
-    condition = contains(local.my_locations, lower(replace(trimspace(var.vpn_location), " ", "")))
+    condition     = contains(local.my_locations, lower(replace(trimspace(var.vpn_location), " ", "")))
     error_message = "Enter only these LOCATIONS from list"
   }
+}
+
+variable "vpn_connections_key" {
+  type        = string
+  description = "Enter the SHARED KEY of S2S VPN Connections"
 }
 
 
@@ -48,7 +53,7 @@ variable "vnet2-cidr" {
 }
 
 variable "gateway-cidr" {
-  type = string
+  type        = string
   description = "Enter the CIDR for local Gateway"
 }
 
@@ -68,15 +73,15 @@ variable "env_names" {
 # }
 
 variable "win-password" {
-  type = string
+  type        = string
   description = "Enter VM Password"
 }
 
 variable "osDisk" {
-  type = number
+  type        = number
   description = "Enter Disk Size"
   validation {
-    condition = var.osDisk >= 127
+    condition     = var.osDisk >= 127
     error_message = "OS Disk size must be GREATER THAN or EQUAL to 127GB"
   }
 }

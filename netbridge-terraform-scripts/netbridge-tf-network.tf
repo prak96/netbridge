@@ -46,6 +46,7 @@ resource "azurerm_subnet" "subnet" {
 }
 
 
+
 # Network Security Group
 resource "azurerm_network_security_group" "nsg" {
   count = length(var.env_names)
@@ -55,7 +56,7 @@ resource "azurerm_network_security_group" "nsg" {
   resource_group_name = azurerm_resource_group.my_rg.name
 
   tags = merge(local.my_tags, {
-    "service" = "networkSecurityGroup"
+    "service" = "networkSecurityGroup-${var.env_names[count.index]}"
   })
 }
 # NSG Association with Subnets!
@@ -80,38 +81,11 @@ resource "azurerm_route_table" "routeTable" {
 }
 
 
-
-###############################
-
-## VPN Configurations ##
-
-## Virtual Network For VPN
-resource "azurerm_virtual_network" "my_vnet2" {
-  name                = "${local.my_tags.project}-${local.my_tags.usedBy}-vnetVPN"
-  location            = var.vpn_location
-  resource_group_name = azurerm_resource_group.my_rg.name
-  address_space       = [var.vnet2-cidr]
-
-  tags = merge(local.my_tags,{
-    "service" = "virtualNetwork-VPN"
-  })
-
-}
-
-# resource "azurerm_bastion_host" "bastion" {
-#   location = azurerm_virtual_network.my_vnet2.location
-#   name = "${local.my_tags.project}-${local.my_tags.usedBy}-bastion"
-#   resource_group_name = azurerm_resource_group.my_rg.name
+# resource "azurerm_route" "name" {
+#   address_prefix = "value"
+#   name = "value"
+#   next_hop_type = "value"
+#   resource_group_name = "value"
+#   route_table_name = "value"
   
 # }
-
-
-resource "azurerm_local_network_gateway" "localGateway" {
-  location = azurerm_resource_group.my_rg.location
-  name = "${local.my_tags.project}-${local.my_tags.usedBy}-localGateway"
-  resource_group_name = azurerm_resource_group.my_rg.name
-  address_space = ["10.0.0.0/24", "192.168.0.0/24"]
-  gateway_address = ""
-  
-}
-
